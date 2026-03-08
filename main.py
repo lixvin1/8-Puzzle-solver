@@ -184,6 +184,61 @@ class BFSSearch:
         return result
 
 
+class DFSSearch:
+    def solve(self, start_state):
+        tracemalloc.start()
+        start_time = time.time()
+
+        frontier = [start_state]
+        frontier_boards = {start_state.board}
+        explored = set()
+
+        nodes_expanded = 0
+        max_fringe_size = 1
+        max_search_depth = 0
+
+        while frontier:
+            current_state = frontier.pop()
+            frontier_boards.remove(current_state.board)
+
+            if current_state.is_goal():
+                running_time = time.time() - start_time
+                current_mem, peak_mem = tracemalloc.get_traced_memory()
+                tracemalloc.stop()
+
+                return {
+                    "path_to_goal": current_state.get_path()[0],
+                    "cost_of_path": len(current_state.get_path()[0]),
+                    "nodes_expanded": nodes_expanded,
+                    "fringe_size": len(frontier),
+                    "max_fringe_size": max_fringe_size,
+                    "search_depth": current_state.depth,
+                    "max_search_depth": max_search_depth,
+                    "running_time": running_time,
+                    "max_ram_usage": peak_mem / (1024 * 1024),
+                    "states": current_state.get_path()[1]
+                }
+
+            explored.add(current_state.board)
+            nodes_expanded += 1
+
+            neighbors = current_state.get_neighbors()
+
+            for neighbor in reversed(neighbors):
+                if neighbor.board not in frontier_boards and neighbor.board not in explored:
+                    frontier.append(neighbor)
+                    frontier_boards.add(neighbor.board)
+
+                    if neighbor.depth > max_search_depth:
+                        max_search_depth = neighbor.depth
+
+            if len(frontier) > max_fringe_size:
+                max_fringe_size = len(frontier)
+
+        tracemalloc.stop()
+        return None
+
+
 class PuzzleSolver:
     def __init__(self, strategy):
         self.strategy = strategy
@@ -249,8 +304,8 @@ def main():
 
     start_state = PuzzleState(board)
 
-    bfs_strategy = BFSSearch()
-    solver = PuzzleSolver(bfs_strategy)
+    dfs_strategy = DFSSearch()
+    solver = PuzzleSolver(dfs_strategy)
 
     result = solver.solve(start_state)
     show_result(result)
