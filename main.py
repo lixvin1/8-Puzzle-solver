@@ -1,6 +1,5 @@
 from collections import deque
 import time
-import tracemalloc
 
 
 class PuzzleState:
@@ -107,7 +106,7 @@ class PuzzleState:
 
 class BFSSearch:
     def solve(self, start_state):
-        tracemalloc.start()
+
         start_time = time.time()
 
         frontier = deque()
@@ -119,7 +118,6 @@ class BFSSearch:
         explored = set()
 
         nodes_expanded = 0
-        max_fringe_size = 1
         max_search_depth = 0
 
         while len(frontier) > 0:
@@ -130,17 +128,14 @@ class BFSSearch:
 
             if current_state.is_goal():
                 running_time = time.time() - start_time
-                current_mem, peak_mem = tracemalloc.get_traced_memory()
-                tracemalloc.stop()
+
 
                 return self.build_result(
                     goal_state=current_state,
                     nodes_expanded=nodes_expanded,
-                    fringe_size=len(frontier),
-                    max_fringe_size=max_fringe_size,
-                    max_search_depth=max_search_depth,
+                     max_search_depth=max_search_depth,
                     running_time=running_time,
-                    max_ram_usage=peak_mem / (1024 * 1024)
+
                 )
 
             nodes_expanded = nodes_expanded + 1
@@ -159,8 +154,7 @@ class BFSSearch:
                 max_fringe_size = len(frontier)
 
         running_time = time.time() - start_time
-        current_mem, peak_mem = tracemalloc.get_traced_memory()
-        tracemalloc.stop()
+
 
         return None
 
@@ -186,7 +180,7 @@ class BFSSearch:
 
 class DFSSearch:
     def solve(self, start_state):
-        tracemalloc.start()
+
         start_time = time.time()
 
         frontier = [start_state]
@@ -194,7 +188,7 @@ class DFSSearch:
         explored = set()
 
         nodes_expanded = 0
-        max_fringe_size = 1
+
         max_search_depth = 0
 
         while frontier:
@@ -203,19 +197,17 @@ class DFSSearch:
 
             if current_state.is_goal():
                 running_time = time.time() - start_time
-                current_mem, peak_mem = tracemalloc.get_traced_memory()
-                tracemalloc.stop()
+
 
                 return {
                     "path_to_goal": current_state.get_path()[0],
                     "cost_of_path": len(current_state.get_path()[0]),
                     "nodes_expanded": nodes_expanded,
-                    "fringe_size": len(frontier),
-                    "max_fringe_size": max_fringe_size,
+
                     "search_depth": current_state.depth,
                     "max_search_depth": max_search_depth,
                     "running_time": running_time,
-                    "max_ram_usage": peak_mem / (1024 * 1024),
+
                     "states": current_state.get_path()[1]
                 }
 
@@ -232,10 +224,8 @@ class DFSSearch:
                     if neighbor.depth > max_search_depth:
                         max_search_depth = neighbor.depth
 
-            if len(frontier) > max_fringe_size:
-                max_fringe_size = len(frontier)
 
-        tracemalloc.stop()
+
         return None
 
 
@@ -279,12 +269,8 @@ def show_result(result):
     print("path_to_goal:", result["path_to_goal"])
     print("cost_of_path:", result["cost_of_path"])
     print("nodes_expanded:", result["nodes_expanded"])
-    print("fringe_size:", result["fringe_size"])
-    print("max_fringe_size:", result["max_fringe_size"])
     print("search_depth:", result["search_depth"])
-    print("max_search_depth:", result["max_search_depth"])
     print("running_time:", format(result["running_time"], ".8f"))
-    print("max_ram_usage:", format(result["max_ram_usage"], ".8f"))
     print()
 
     print("Trace of states:")
