@@ -1,0 +1,280 @@
+<html>
+<head>
+<title>main.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #2aacb8;}
+.s4 { color: #6aab73;}
+</style>
+</head>
+<body bgcolor="#191a1c">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+main.py</font>
+</center></td></tr></table>
+<pre><span class="s0">from </span><span class="s1">collections </span><span class="s0">import </span><span class="s1">deque</span>
+<span class="s0">import </span><span class="s1">time</span>
+<span class="s0">import </span><span class="s1">tracemalloc</span>
+
+
+<span class="s0">class </span><span class="s1">PuzzleState</span><span class="s2">:</span>
+    <span class="s1">GOAL </span><span class="s2">= (</span><span class="s3">0</span><span class="s2">, </span><span class="s3">1</span><span class="s2">, </span><span class="s3">2</span><span class="s2">, </span><span class="s3">3</span><span class="s2">, </span><span class="s3">4</span><span class="s2">, </span><span class="s3">5</span><span class="s2">, </span><span class="s3">6</span><span class="s2">, </span><span class="s3">7</span><span class="s2">, </span><span class="s3">8</span><span class="s2">)</span>
+
+    <span class="s0">def </span><span class="s1">__init__</span><span class="s2">(</span><span class="s1">self</span><span class="s2">, </span><span class="s1">board</span><span class="s2">, </span><span class="s1">parent</span><span class="s2">=</span><span class="s0">None</span><span class="s2">, </span><span class="s1">move</span><span class="s2">=</span><span class="s0">None</span><span class="s2">, </span><span class="s1">depth</span><span class="s2">=</span><span class="s3">0</span><span class="s2">):</span>
+        <span class="s1">self</span><span class="s2">.</span><span class="s1">board </span><span class="s2">= </span><span class="s1">tuple</span><span class="s2">(</span><span class="s1">board</span><span class="s2">)</span>
+        <span class="s1">self</span><span class="s2">.</span><span class="s1">parent </span><span class="s2">= </span><span class="s1">parent</span>
+        <span class="s1">self</span><span class="s2">.</span><span class="s1">move </span><span class="s2">= </span><span class="s1">move</span>
+        <span class="s1">self</span><span class="s2">.</span><span class="s1">depth </span><span class="s2">= </span><span class="s1">depth</span>
+
+    <span class="s0">def </span><span class="s1">is_goal</span><span class="s2">(</span><span class="s1">self</span><span class="s2">):</span>
+        <span class="s0">if </span><span class="s1">self</span><span class="s2">.</span><span class="s1">board </span><span class="s2">== </span><span class="s1">PuzzleState</span><span class="s2">.</span><span class="s1">GOAL</span><span class="s2">:</span>
+            <span class="s0">return True</span>
+        <span class="s0">else</span><span class="s2">:</span>
+            <span class="s0">return False</span>
+
+    <span class="s0">def </span><span class="s1">print_board</span><span class="s2">(</span><span class="s1">self</span><span class="s2">):</span>
+        <span class="s1">print</span><span class="s2">(</span><span class="s1">self</span><span class="s2">.</span><span class="s1">board</span><span class="s2">[</span><span class="s3">0</span><span class="s2">], </span><span class="s1">self</span><span class="s2">.</span><span class="s1">board</span><span class="s2">[</span><span class="s3">1</span><span class="s2">], </span><span class="s1">self</span><span class="s2">.</span><span class="s1">board</span><span class="s2">[</span><span class="s3">2</span><span class="s2">])</span>
+        <span class="s1">print</span><span class="s2">(</span><span class="s1">self</span><span class="s2">.</span><span class="s1">board</span><span class="s2">[</span><span class="s3">3</span><span class="s2">], </span><span class="s1">self</span><span class="s2">.</span><span class="s1">board</span><span class="s2">[</span><span class="s3">4</span><span class="s2">], </span><span class="s1">self</span><span class="s2">.</span><span class="s1">board</span><span class="s2">[</span><span class="s3">5</span><span class="s2">])</span>
+        <span class="s1">print</span><span class="s2">(</span><span class="s1">self</span><span class="s2">.</span><span class="s1">board</span><span class="s2">[</span><span class="s3">6</span><span class="s2">], </span><span class="s1">self</span><span class="s2">.</span><span class="s1">board</span><span class="s2">[</span><span class="s3">7</span><span class="s2">], </span><span class="s1">self</span><span class="s2">.</span><span class="s1">board</span><span class="s2">[</span><span class="s3">8</span><span class="s2">])</span>
+        <span class="s1">print</span><span class="s2">()</span>
+
+    <span class="s0">def </span><span class="s1">make_move</span><span class="s2">(</span><span class="s1">self</span><span class="s2">, </span><span class="s1">direction</span><span class="s2">):</span>
+        <span class="s1">zero_index </span><span class="s2">= </span><span class="s1">self</span><span class="s2">.</span><span class="s1">board</span><span class="s2">.</span><span class="s1">index</span><span class="s2">(</span><span class="s3">0</span><span class="s2">)</span>
+
+        <span class="s1">row </span><span class="s2">= </span><span class="s1">zero_index </span><span class="s2">// </span><span class="s3">3</span>
+        <span class="s1">col </span><span class="s2">= </span><span class="s1">zero_index </span><span class="s2">% </span><span class="s3">3</span>
+
+        <span class="s1">new_row </span><span class="s2">= </span><span class="s1">row</span>
+        <span class="s1">new_col </span><span class="s2">= </span><span class="s1">col</span>
+
+        <span class="s0">if </span><span class="s1">direction </span><span class="s2">== </span><span class="s4">&quot;Up&quot;</span><span class="s2">:</span>
+            <span class="s1">new_row </span><span class="s2">= </span><span class="s1">row </span><span class="s2">- </span><span class="s3">1</span>
+        <span class="s0">elif </span><span class="s1">direction </span><span class="s2">== </span><span class="s4">&quot;Down&quot;</span><span class="s2">:</span>
+            <span class="s1">new_row </span><span class="s2">= </span><span class="s1">row </span><span class="s2">+ </span><span class="s3">1</span>
+        <span class="s0">elif </span><span class="s1">direction </span><span class="s2">== </span><span class="s4">&quot;Left&quot;</span><span class="s2">:</span>
+            <span class="s1">new_col </span><span class="s2">= </span><span class="s1">col </span><span class="s2">- </span><span class="s3">1</span>
+        <span class="s0">elif </span><span class="s1">direction </span><span class="s2">== </span><span class="s4">&quot;Right&quot;</span><span class="s2">:</span>
+            <span class="s1">new_col </span><span class="s2">= </span><span class="s1">col </span><span class="s2">+ </span><span class="s3">1</span>
+        <span class="s0">else</span><span class="s2">:</span>
+            <span class="s0">return None</span>
+
+        <span class="s0">if </span><span class="s1">new_row </span><span class="s2">&lt; </span><span class="s3">0 </span><span class="s0">or </span><span class="s1">new_row </span><span class="s2">&gt; </span><span class="s3">2 </span><span class="s0">or </span><span class="s1">new_col </span><span class="s2">&lt; </span><span class="s3">0 </span><span class="s0">or </span><span class="s1">new_col </span><span class="s2">&gt; </span><span class="s3">2</span><span class="s2">:</span>
+            <span class="s0">return None</span>
+
+        <span class="s1">new_index </span><span class="s2">= </span><span class="s1">new_row </span><span class="s2">* </span><span class="s3">3 </span><span class="s2">+ </span><span class="s1">new_col</span>
+
+        <span class="s1">new_board </span><span class="s2">= </span><span class="s1">list</span><span class="s2">(</span><span class="s1">self</span><span class="s2">.</span><span class="s1">board</span><span class="s2">)</span>
+
+        <span class="s1">temp </span><span class="s2">= </span><span class="s1">new_board</span><span class="s2">[</span><span class="s1">zero_index</span><span class="s2">]</span>
+        <span class="s1">new_board</span><span class="s2">[</span><span class="s1">zero_index</span><span class="s2">] = </span><span class="s1">new_board</span><span class="s2">[</span><span class="s1">new_index</span><span class="s2">]</span>
+        <span class="s1">new_board</span><span class="s2">[</span><span class="s1">new_index</span><span class="s2">] = </span><span class="s1">temp</span>
+
+        <span class="s1">child_state </span><span class="s2">= </span><span class="s1">PuzzleState</span><span class="s2">(</span>
+            <span class="s1">board</span><span class="s2">=</span><span class="s1">new_board</span><span class="s2">,</span>
+            <span class="s1">parent</span><span class="s2">=</span><span class="s1">self</span><span class="s2">,</span>
+            <span class="s1">move</span><span class="s2">=</span><span class="s1">direction</span><span class="s2">,</span>
+            <span class="s1">depth</span><span class="s2">=</span><span class="s1">self</span><span class="s2">.</span><span class="s1">depth </span><span class="s2">+ </span><span class="s3">1</span>
+        <span class="s2">)</span>
+
+        <span class="s0">return </span><span class="s1">child_state</span>
+
+    <span class="s0">def </span><span class="s1">get_neighbors</span><span class="s2">(</span><span class="s1">self</span><span class="s2">):</span>
+        <span class="s1">neighbors </span><span class="s2">= []</span>
+
+        <span class="s1">up_state </span><span class="s2">= </span><span class="s1">self</span><span class="s2">.</span><span class="s1">make_move</span><span class="s2">(</span><span class="s4">&quot;Up&quot;</span><span class="s2">)</span>
+        <span class="s0">if </span><span class="s1">up_state </span><span class="s0">is not None</span><span class="s2">:</span>
+            <span class="s1">neighbors</span><span class="s2">.</span><span class="s1">append</span><span class="s2">(</span><span class="s1">up_state</span><span class="s2">)</span>
+
+        <span class="s1">down_state </span><span class="s2">= </span><span class="s1">self</span><span class="s2">.</span><span class="s1">make_move</span><span class="s2">(</span><span class="s4">&quot;Down&quot;</span><span class="s2">)</span>
+        <span class="s0">if </span><span class="s1">down_state </span><span class="s0">is not None</span><span class="s2">:</span>
+            <span class="s1">neighbors</span><span class="s2">.</span><span class="s1">append</span><span class="s2">(</span><span class="s1">down_state</span><span class="s2">)</span>
+
+        <span class="s1">left_state </span><span class="s2">= </span><span class="s1">self</span><span class="s2">.</span><span class="s1">make_move</span><span class="s2">(</span><span class="s4">&quot;Left&quot;</span><span class="s2">)</span>
+        <span class="s0">if </span><span class="s1">left_state </span><span class="s0">is not None</span><span class="s2">:</span>
+            <span class="s1">neighbors</span><span class="s2">.</span><span class="s1">append</span><span class="s2">(</span><span class="s1">left_state</span><span class="s2">)</span>
+
+        <span class="s1">right_state </span><span class="s2">= </span><span class="s1">self</span><span class="s2">.</span><span class="s1">make_move</span><span class="s2">(</span><span class="s4">&quot;Right&quot;</span><span class="s2">)</span>
+        <span class="s0">if </span><span class="s1">right_state </span><span class="s0">is not None</span><span class="s2">:</span>
+            <span class="s1">neighbors</span><span class="s2">.</span><span class="s1">append</span><span class="s2">(</span><span class="s1">right_state</span><span class="s2">)</span>
+
+        <span class="s0">return </span><span class="s1">neighbors</span>
+
+    <span class="s0">def </span><span class="s1">get_path</span><span class="s2">(</span><span class="s1">self</span><span class="s2">):</span>
+        <span class="s1">moves </span><span class="s2">= []</span>
+        <span class="s1">states </span><span class="s2">= []</span>
+
+        <span class="s1">current </span><span class="s2">= </span><span class="s1">self</span>
+
+        <span class="s0">while </span><span class="s1">current </span><span class="s0">is not None</span><span class="s2">:</span>
+            <span class="s1">states</span><span class="s2">.</span><span class="s1">append</span><span class="s2">(</span><span class="s1">current</span><span class="s2">.</span><span class="s1">board</span><span class="s2">)</span>
+
+            <span class="s0">if </span><span class="s1">current</span><span class="s2">.</span><span class="s1">move </span><span class="s0">is not None</span><span class="s2">:</span>
+                <span class="s1">moves</span><span class="s2">.</span><span class="s1">append</span><span class="s2">(</span><span class="s1">current</span><span class="s2">.</span><span class="s1">move</span><span class="s2">)</span>
+
+            <span class="s1">current </span><span class="s2">= </span><span class="s1">current</span><span class="s2">.</span><span class="s1">parent</span>
+
+        <span class="s1">moves</span><span class="s2">.</span><span class="s1">reverse</span><span class="s2">()</span>
+        <span class="s1">states</span><span class="s2">.</span><span class="s1">reverse</span><span class="s2">()</span>
+
+        <span class="s0">return </span><span class="s1">moves</span><span class="s2">, </span><span class="s1">states</span>
+
+
+<span class="s0">class </span><span class="s1">BFSSearch</span><span class="s2">:</span>
+    <span class="s0">def </span><span class="s1">solve</span><span class="s2">(</span><span class="s1">self</span><span class="s2">, </span><span class="s1">start_state</span><span class="s2">):</span>
+        <span class="s1">tracemalloc</span><span class="s2">.</span><span class="s1">start</span><span class="s2">()</span>
+        <span class="s1">start_time </span><span class="s2">= </span><span class="s1">time</span><span class="s2">.</span><span class="s1">time</span><span class="s2">()</span>
+
+        <span class="s1">frontier </span><span class="s2">= </span><span class="s1">deque</span><span class="s2">()</span>
+        <span class="s1">frontier</span><span class="s2">.</span><span class="s1">append</span><span class="s2">(</span><span class="s1">start_state</span><span class="s2">)</span>
+
+        <span class="s1">frontier_boards </span><span class="s2">= </span><span class="s1">set</span><span class="s2">()</span>
+        <span class="s1">frontier_boards</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">start_state</span><span class="s2">.</span><span class="s1">board</span><span class="s2">)</span>
+
+        <span class="s1">explored </span><span class="s2">= </span><span class="s1">set</span><span class="s2">()</span>
+
+        <span class="s1">nodes_expanded </span><span class="s2">= </span><span class="s3">0</span>
+        <span class="s1">max_fringe_size </span><span class="s2">= </span><span class="s3">1</span>
+        <span class="s1">max_search_depth </span><span class="s2">= </span><span class="s3">0</span>
+
+        <span class="s0">while </span><span class="s1">len</span><span class="s2">(</span><span class="s1">frontier</span><span class="s2">) &gt; </span><span class="s3">0</span><span class="s2">:</span>
+            <span class="s1">current_state </span><span class="s2">= </span><span class="s1">frontier</span><span class="s2">.</span><span class="s1">popleft</span><span class="s2">()</span>
+            <span class="s1">frontier_boards</span><span class="s2">.</span><span class="s1">remove</span><span class="s2">(</span><span class="s1">current_state</span><span class="s2">.</span><span class="s1">board</span><span class="s2">)</span>
+
+            <span class="s1">explored</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">current_state</span><span class="s2">.</span><span class="s1">board</span><span class="s2">)</span>
+
+            <span class="s0">if </span><span class="s1">current_state</span><span class="s2">.</span><span class="s1">is_goal</span><span class="s2">():</span>
+                <span class="s1">running_time </span><span class="s2">= </span><span class="s1">time</span><span class="s2">.</span><span class="s1">time</span><span class="s2">() - </span><span class="s1">start_time</span>
+                <span class="s1">current_mem</span><span class="s2">, </span><span class="s1">peak_mem </span><span class="s2">= </span><span class="s1">tracemalloc</span><span class="s2">.</span><span class="s1">get_traced_memory</span><span class="s2">()</span>
+                <span class="s1">tracemalloc</span><span class="s2">.</span><span class="s1">stop</span><span class="s2">()</span>
+
+                <span class="s0">return </span><span class="s1">self</span><span class="s2">.</span><span class="s1">build_result</span><span class="s2">(</span>
+                    <span class="s1">goal_state</span><span class="s2">=</span><span class="s1">current_state</span><span class="s2">,</span>
+                    <span class="s1">nodes_expanded</span><span class="s2">=</span><span class="s1">nodes_expanded</span><span class="s2">,</span>
+                    <span class="s1">fringe_size</span><span class="s2">=</span><span class="s1">len</span><span class="s2">(</span><span class="s1">frontier</span><span class="s2">),</span>
+                    <span class="s1">max_fringe_size</span><span class="s2">=</span><span class="s1">max_fringe_size</span><span class="s2">,</span>
+                    <span class="s1">max_search_depth</span><span class="s2">=</span><span class="s1">max_search_depth</span><span class="s2">,</span>
+                    <span class="s1">running_time</span><span class="s2">=</span><span class="s1">running_time</span><span class="s2">,</span>
+                    <span class="s1">max_ram_usage</span><span class="s2">=</span><span class="s1">peak_mem </span><span class="s2">/ (</span><span class="s3">1024 </span><span class="s2">* </span><span class="s3">1024</span><span class="s2">)</span>
+                <span class="s2">)</span>
+
+            <span class="s1">nodes_expanded </span><span class="s2">= </span><span class="s1">nodes_expanded </span><span class="s2">+ </span><span class="s3">1</span>
+
+            <span class="s1">neighbors </span><span class="s2">= </span><span class="s1">current_state</span><span class="s2">.</span><span class="s1">get_neighbors</span><span class="s2">()</span>
+
+            <span class="s0">for </span><span class="s1">neighbor </span><span class="s0">in </span><span class="s1">neighbors</span><span class="s2">:</span>
+                <span class="s0">if </span><span class="s1">neighbor</span><span class="s2">.</span><span class="s1">board </span><span class="s0">not in </span><span class="s1">frontier_boards </span><span class="s0">and </span><span class="s1">neighbor</span><span class="s2">.</span><span class="s1">board </span><span class="s0">not in </span><span class="s1">explored</span><span class="s2">:</span>
+                    <span class="s1">frontier</span><span class="s2">.</span><span class="s1">append</span><span class="s2">(</span><span class="s1">neighbor</span><span class="s2">)</span>
+                    <span class="s1">frontier_boards</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">neighbor</span><span class="s2">.</span><span class="s1">board</span><span class="s2">)</span>
+
+                    <span class="s0">if </span><span class="s1">neighbor</span><span class="s2">.</span><span class="s1">depth </span><span class="s2">&gt; </span><span class="s1">max_search_depth</span><span class="s2">:</span>
+                        <span class="s1">max_search_depth </span><span class="s2">= </span><span class="s1">neighbor</span><span class="s2">.</span><span class="s1">depth</span>
+
+            <span class="s0">if </span><span class="s1">len</span><span class="s2">(</span><span class="s1">frontier</span><span class="s2">) &gt; </span><span class="s1">max_fringe_size</span><span class="s2">:</span>
+                <span class="s1">max_fringe_size </span><span class="s2">= </span><span class="s1">len</span><span class="s2">(</span><span class="s1">frontier</span><span class="s2">)</span>
+
+        <span class="s1">running_time </span><span class="s2">= </span><span class="s1">time</span><span class="s2">.</span><span class="s1">time</span><span class="s2">() - </span><span class="s1">start_time</span>
+        <span class="s1">current_mem</span><span class="s2">, </span><span class="s1">peak_mem </span><span class="s2">= </span><span class="s1">tracemalloc</span><span class="s2">.</span><span class="s1">get_traced_memory</span><span class="s2">()</span>
+        <span class="s1">tracemalloc</span><span class="s2">.</span><span class="s1">stop</span><span class="s2">()</span>
+
+        <span class="s0">return None</span>
+
+    <span class="s0">def </span><span class="s1">build_result</span><span class="s2">(</span><span class="s1">self</span><span class="s2">, </span><span class="s1">goal_state</span><span class="s2">, </span><span class="s1">nodes_expanded</span><span class="s2">, </span><span class="s1">fringe_size</span><span class="s2">, </span><span class="s1">max_fringe_size</span><span class="s2">,</span>
+                     <span class="s1">max_search_depth</span><span class="s2">, </span><span class="s1">running_time</span><span class="s2">, </span><span class="s1">max_ram_usage</span><span class="s2">):</span>
+        <span class="s1">path_to_goal</span><span class="s2">, </span><span class="s1">states </span><span class="s2">= </span><span class="s1">goal_state</span><span class="s2">.</span><span class="s1">get_path</span><span class="s2">()</span>
+
+        <span class="s1">result </span><span class="s2">= {</span>
+            <span class="s4">&quot;path_to_goal&quot;</span><span class="s2">: </span><span class="s1">path_to_goal</span><span class="s2">,</span>
+            <span class="s4">&quot;cost_of_path&quot;</span><span class="s2">: </span><span class="s1">len</span><span class="s2">(</span><span class="s1">path_to_goal</span><span class="s2">),</span>
+            <span class="s4">&quot;nodes_expanded&quot;</span><span class="s2">: </span><span class="s1">nodes_expanded</span><span class="s2">,</span>
+            <span class="s4">&quot;fringe_size&quot;</span><span class="s2">: </span><span class="s1">fringe_size</span><span class="s2">,</span>
+            <span class="s4">&quot;max_fringe_size&quot;</span><span class="s2">: </span><span class="s1">max_fringe_size</span><span class="s2">,</span>
+            <span class="s4">&quot;search_depth&quot;</span><span class="s2">: </span><span class="s1">goal_state</span><span class="s2">.</span><span class="s1">depth</span><span class="s2">,</span>
+            <span class="s4">&quot;max_search_depth&quot;</span><span class="s2">: </span><span class="s1">max_search_depth</span><span class="s2">,</span>
+            <span class="s4">&quot;running_time&quot;</span><span class="s2">: </span><span class="s1">running_time</span><span class="s2">,</span>
+            <span class="s4">&quot;max_ram_usage&quot;</span><span class="s2">: </span><span class="s1">max_ram_usage</span><span class="s2">,</span>
+            <span class="s4">&quot;states&quot;</span><span class="s2">: </span><span class="s1">states</span>
+        <span class="s2">}</span>
+
+        <span class="s0">return </span><span class="s1">result</span>
+
+
+<span class="s0">class </span><span class="s1">PuzzleSolver</span><span class="s2">:</span>
+    <span class="s0">def </span><span class="s1">__init__</span><span class="s2">(</span><span class="s1">self</span><span class="s2">, </span><span class="s1">strategy</span><span class="s2">):</span>
+        <span class="s1">self</span><span class="s2">.</span><span class="s1">strategy </span><span class="s2">= </span><span class="s1">strategy</span>
+
+    <span class="s0">def </span><span class="s1">set_strategy</span><span class="s2">(</span><span class="s1">self</span><span class="s2">, </span><span class="s1">strategy</span><span class="s2">):</span>
+        <span class="s1">self</span><span class="s2">.</span><span class="s1">strategy </span><span class="s2">= </span><span class="s1">strategy</span>
+
+    <span class="s0">def </span><span class="s1">solve</span><span class="s2">(</span><span class="s1">self</span><span class="s2">, </span><span class="s1">start_state</span><span class="s2">):</span>
+        <span class="s0">return </span><span class="s1">self</span><span class="s2">.</span><span class="s1">strategy</span><span class="s2">.</span><span class="s1">solve</span><span class="s2">(</span><span class="s1">start_state</span><span class="s2">)</span>
+
+
+<span class="s0">def </span><span class="s1">parse_state</span><span class="s2">(</span><span class="s1">text</span><span class="s2">):</span>
+    <span class="s1">parts </span><span class="s2">= </span><span class="s1">text</span><span class="s2">.</span><span class="s1">split</span><span class="s2">(</span><span class="s4">&quot;,&quot;</span><span class="s2">)</span>
+    <span class="s1">board </span><span class="s2">= []</span>
+
+    <span class="s0">for </span><span class="s1">x </span><span class="s0">in </span><span class="s1">parts</span><span class="s2">:</span>
+        <span class="s1">board</span><span class="s2">.</span><span class="s1">append</span><span class="s2">(</span><span class="s1">int</span><span class="s2">(</span><span class="s1">x</span><span class="s2">))</span>
+
+    <span class="s1">board </span><span class="s2">= </span><span class="s1">tuple</span><span class="s2">(</span><span class="s1">board</span><span class="s2">)</span>
+
+    <span class="s0">if </span><span class="s1">len</span><span class="s2">(</span><span class="s1">board</span><span class="s2">) != </span><span class="s3">9</span><span class="s2">:</span>
+        <span class="s0">raise </span><span class="s1">ValueError</span><span class="s2">(</span><span class="s4">&quot;Input must contain exactly 9 numbers.&quot;</span><span class="s2">)</span>
+
+    <span class="s0">if </span><span class="s1">set</span><span class="s2">(</span><span class="s1">board</span><span class="s2">) != </span><span class="s1">set</span><span class="s2">(</span><span class="s1">range</span><span class="s2">(</span><span class="s3">9</span><span class="s2">)):</span>
+        <span class="s0">raise </span><span class="s1">ValueError</span><span class="s2">(</span><span class="s4">&quot;Input must contain numbers from 0 to 8 exactly once.&quot;</span><span class="s2">)</span>
+
+    <span class="s0">return </span><span class="s1">board</span>
+
+
+
+
+
+<span class="s0">def </span><span class="s1">show_result</span><span class="s2">(</span><span class="s1">result</span><span class="s2">):</span>
+    <span class="s0">if </span><span class="s1">result </span><span class="s0">is None</span><span class="s2">:</span>
+        <span class="s1">print</span><span class="s2">(</span><span class="s4">&quot;No solution found.&quot;</span><span class="s2">)</span>
+        <span class="s0">return</span>
+
+    <span class="s1">print</span><span class="s2">(</span><span class="s4">&quot;path_to_goal:&quot;</span><span class="s2">, </span><span class="s1">result</span><span class="s2">[</span><span class="s4">&quot;path_to_goal&quot;</span><span class="s2">])</span>
+    <span class="s1">print</span><span class="s2">(</span><span class="s4">&quot;cost_of_path:&quot;</span><span class="s2">, </span><span class="s1">result</span><span class="s2">[</span><span class="s4">&quot;cost_of_path&quot;</span><span class="s2">])</span>
+    <span class="s1">print</span><span class="s2">(</span><span class="s4">&quot;nodes_expanded:&quot;</span><span class="s2">, </span><span class="s1">result</span><span class="s2">[</span><span class="s4">&quot;nodes_expanded&quot;</span><span class="s2">])</span>
+    <span class="s1">print</span><span class="s2">(</span><span class="s4">&quot;fringe_size:&quot;</span><span class="s2">, </span><span class="s1">result</span><span class="s2">[</span><span class="s4">&quot;fringe_size&quot;</span><span class="s2">])</span>
+    <span class="s1">print</span><span class="s2">(</span><span class="s4">&quot;max_fringe_size:&quot;</span><span class="s2">, </span><span class="s1">result</span><span class="s2">[</span><span class="s4">&quot;max_fringe_size&quot;</span><span class="s2">])</span>
+    <span class="s1">print</span><span class="s2">(</span><span class="s4">&quot;search_depth:&quot;</span><span class="s2">, </span><span class="s1">result</span><span class="s2">[</span><span class="s4">&quot;search_depth&quot;</span><span class="s2">])</span>
+    <span class="s1">print</span><span class="s2">(</span><span class="s4">&quot;max_search_depth:&quot;</span><span class="s2">, </span><span class="s1">result</span><span class="s2">[</span><span class="s4">&quot;max_search_depth&quot;</span><span class="s2">])</span>
+    <span class="s1">print</span><span class="s2">(</span><span class="s4">&quot;running_time:&quot;</span><span class="s2">, </span><span class="s1">format</span><span class="s2">(</span><span class="s1">result</span><span class="s2">[</span><span class="s4">&quot;running_time&quot;</span><span class="s2">], </span><span class="s4">&quot;.8f&quot;</span><span class="s2">))</span>
+    <span class="s1">print</span><span class="s2">(</span><span class="s4">&quot;max_ram_usage:&quot;</span><span class="s2">, </span><span class="s1">format</span><span class="s2">(</span><span class="s1">result</span><span class="s2">[</span><span class="s4">&quot;max_ram_usage&quot;</span><span class="s2">], </span><span class="s4">&quot;.8f&quot;</span><span class="s2">))</span>
+    <span class="s1">print</span><span class="s2">()</span>
+
+    <span class="s1">print</span><span class="s2">(</span><span class="s4">&quot;Trace of states:&quot;</span><span class="s2">)</span>
+    <span class="s1">step_number </span><span class="s2">= </span><span class="s3">0</span>
+
+    <span class="s0">for </span><span class="s1">board </span><span class="s0">in </span><span class="s1">result</span><span class="s2">[</span><span class="s4">&quot;states&quot;</span><span class="s2">]:</span>
+        <span class="s1">print</span><span class="s2">(</span><span class="s4">&quot;Step&quot;</span><span class="s2">, </span><span class="s1">step_number</span><span class="s2">)</span>
+        <span class="s1">state </span><span class="s2">= </span><span class="s1">PuzzleState</span><span class="s2">(</span><span class="s1">board</span><span class="s2">)</span>
+        <span class="s1">state</span><span class="s2">.</span><span class="s1">print_board</span><span class="s2">()</span>
+        <span class="s1">step_number </span><span class="s2">= </span><span class="s1">step_number </span><span class="s2">+ </span><span class="s3">1</span>
+
+<span class="s0">def </span><span class="s1">main</span><span class="s2">():</span>
+    <span class="s1">text </span><span class="s2">= </span><span class="s1">input</span><span class="s2">(</span><span class="s4">&quot;Enter initial state like 1,2,5,3,4,0,6,7,8: &quot;</span><span class="s2">)</span>
+    <span class="s1">board </span><span class="s2">= </span><span class="s1">parse_state</span><span class="s2">(</span><span class="s1">text</span><span class="s2">)</span>
+
+
+
+    <span class="s1">start_state </span><span class="s2">= </span><span class="s1">PuzzleState</span><span class="s2">(</span><span class="s1">board</span><span class="s2">)</span>
+
+    <span class="s1">bfs_strategy </span><span class="s2">= </span><span class="s1">BFSSearch</span><span class="s2">()</span>
+    <span class="s1">solver </span><span class="s2">= </span><span class="s1">PuzzleSolver</span><span class="s2">(</span><span class="s1">bfs_strategy</span><span class="s2">)</span>
+
+    <span class="s1">result </span><span class="s2">= </span><span class="s1">solver</span><span class="s2">.</span><span class="s1">solve</span><span class="s2">(</span><span class="s1">start_state</span><span class="s2">)</span>
+    <span class="s1">show_result</span><span class="s2">(</span><span class="s1">result</span><span class="s2">)</span>
+
+
+<span class="s0">if </span><span class="s1">__name__ </span><span class="s2">== </span><span class="s4">&quot;__main__&quot;</span><span class="s2">:</span>
+    <span class="s1">main</span><span class="s2">()</span></pre>
+</body>
+</html>
