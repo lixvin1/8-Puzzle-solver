@@ -1,5 +1,6 @@
 from collections import deque
 import time
+import tracemalloc
 
 
 class PuzzleState:
@@ -106,43 +107,77 @@ class PuzzleState:
 
 class BFSSearch:
     def solve(self, start_state):
+        tracemalloc.start()
         start_time = time.time()
 
-        queue = deque()
-        queue.append(start_state)
+        frontier = deque()
+        frontier.append(start_state)
 
-        visited = set()
-        visited.add(start_state.board)
+        frontier_boards = set()
+        frontier_boards.add(start_state.board)
+
+        explored = set()
 
         nodes_expanded = 0
+        max_fringe_size = 1
+        max_search_depth = 0
 
-        while len(queue) > 0:
-            current_state = queue.popleft()
+        while len(frontier) > 0:
+            current_state = frontier.popleft()
+            frontier_boards.remove(current_state.board)
+
+            explored.add(current_state.board)
 
             if current_state.is_goal():
-                return self.build_result(current_state, nodes_expanded, start_time)
+                running_time = time.time() - start_time
+                current_mem, peak_mem = tracemalloc.get_traced_memory()
+                tracemalloc.stop()
+
+                return self.build_result(
+                    goal_state=current_state,
+                    nodes_expanded=nodes_expanded,
+                    fringe_size=len(frontier),
+                    max_fringe_size=max_fringe_size,
+                    max_search_depth=max_search_depth,
+                    running_time=running_time,
+                    max_ram_usage=peak_mem / (1024 * 1024)
+                )
 
             nodes_expanded = nodes_expanded + 1
 
             neighbors = current_state.get_neighbors()
 
             for neighbor in neighbors:
-                if neighbor.board not in visited:
-                    visited.add(neighbor.board)
-                    queue.append(neighbor)
+                if neighbor.board not in frontier_boards and neighbor.board not in explored:
+                    frontier.append(neighbor)
+                    frontier_boards.add(neighbor.board)
+
+                    if neighbor.depth > max_search_depth:
+                        max_search_depth = neighbor.depth
+
+            if len(frontier) > max_fringe_size:
+                max_fringe_size = len(frontier)
+
+        running_time = time.time() - start_time
+        current_mem, peak_mem = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
 
         return None
 
-    def build_result(self, goal_state, nodes_expanded, start_time):
+    def build_result(self, goal_state, nodes_expanded, fringe_size, max_fringe_size,
+                     max_search_depth, running_time, max_ram_usage):
         path_to_goal, states = goal_state.get_path()
-        running_time = time.time() - start_time
 
         result = {
             "path_to_goal": path_to_goal,
             "cost_of_path": len(path_to_goal),
             "nodes_expanded": nodes_expanded,
+            "fringe_size": fringe_size,
+            "max_fringe_size": max_fringe_size,
             "search_depth": goal_state.depth,
+            "max_search_depth": max_search_depth,
             "running_time": running_time,
+            "max_ram_usage": max_ram_usage,
             "states": states
         }
 
@@ -186,11 +221,15 @@ def show_result(result):
         print("No solution found.")
         return
 
-    print("Path to goal:", result["path_to_goal"])
-    print("Cost of path:", result["cost_of_path"])
-    print("Nodes expanded:", result["nodes_expanded"])
-    print("Search depth:", result["search_depth"])
-    print("Running time:", result["running_time"])
+    print("path_to_goal:", result["path_to_goal"])
+    print("cost_of_path:", result["cost_of_path"])
+    print("nodes_expanded:", result["nodes_expanded"])
+    print("fringe_size:", result["fringe_size"])
+    print("max_fringe_size:", result["max_fringe_size"])
+    print("search_depth:", result["search_depth"])
+    print("max_search_depth:", result["max_search_depth"])
+    print("running_time:", format(result["running_time"], ".8f"))
+    print("max_ram_usage:", format(result["max_ram_usage"], ".8f"))
     print()
 
     print("Trace of states:")
@@ -201,7 +240,6 @@ def show_result(result):
         state = PuzzleState(board)
         state.print_board()
         step_number = step_number + 1
-
 
 def main():
     text = input("Enter initial state like 1,2,5,3,4,0,6,7,8: ")
